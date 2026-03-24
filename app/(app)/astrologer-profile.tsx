@@ -1,83 +1,18 @@
 import Header from '@/src/components/header';
+import { useAstrologer } from '@/src/features/astrolgers/hooks/useAstrologer';
+import { useAstrologerServices } from '@/src/features/astrolgers/hooks/useAstrologerService';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-const ASTROLOGERS: Record<string, any> = {
-  '1': {
-    name: 'Suprio Karmakar',
-    speciality: 'Vedic Astrology',
-    languages: 'Bengali, English, Hindi',
-    exp: '15 Years',
-    rating: 4.5,
-    reviews: 1021,
-    price: 199,
-    emoji: '🔮',
-    color: '#6B21A8',
-    online: true,
-    about:
-      'Expert in Vedic astrology with 15+ years of experience. Specializes in Kundali analysis, marriage compatibility, and career guidance.',
-    services: [
-      { id: '1', name: 'Couples Harmony', price: 499, duration: '30 min', emoji: '💑' },
-      { id: '2', name: 'Love Healing', price: 699, duration: '45 min', emoji: '❤️' },
-      { id: '3', name: 'Career Healing', price: 599, duration: '30 min', emoji: '🚀' },
-      { id: '4', name: 'Medical Healing', price: 799, duration: '60 min', emoji: '🌿' },
-    ],
-    reviews_list: [
-      {
-        id: '1',
-        name: 'Priya S.',
-        rating: 5,
-        comment: 'Very accurate predictions. Highly recommended!',
-        date: '12 Jan 2026',
-      },
-      {
-        id: '2',
-        name: 'Rahul M.',
-        rating: 4,
-        comment: 'Good session, very helpful for career guidance.',
-        date: '5 Jan 2026',
-      },
-      {
-        id: '3',
-        name: 'Sneha K.',
-        rating: 5,
-        comment: 'Amazing experience! Will consult again.',
-        date: '28 Dec 2025',
-      },
-    ],
-  },
-  '2': {
-    name: 'Ananya Sharma',
-    speciality: 'Tarot Expert',
-    languages: 'Hindi, English',
-    exp: '8 Years',
-    rating: 4.8,
-    reviews: 856,
-    price: 299,
-    emoji: '🃏',
-    color: '#9D174D',
-    online: true,
-    about:
-      'Professional Tarot reader with deep expertise in love, relationships, and spiritual guidance.',
-    services: [
-      { id: '1', name: 'Love Reading', price: 399, duration: '30 min', emoji: '❤️' },
-      { id: '2', name: 'Career Reading', price: 499, duration: '45 min', emoji: '🚀' },
-      { id: '3', name: 'General Reading', price: 299, duration: '20 min', emoji: '🃏' },
-    ],
-    reviews_list: [
-      {
-        id: '1',
-        name: 'Amit R.',
-        rating: 5,
-        comment: 'Mind-blowing accuracy!',
-        date: '20 Jan 2026',
-      },
-    ],
-  },
-};
+const COLORS = ['#6B21A8', '#9D174D', '#1E40AF', '#065F46', '#92400E', '#1E3A5F'];
 
 function StarRating({ rating, size = 14 }: { rating: number; size?: number }) {
   return (
@@ -97,159 +32,253 @@ function StarRating({ rating, size = 14 }: { rating: number; size?: number }) {
 
 export default function AstrologerProfileScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const astro = ASTROLOGERS[id] || ASTROLOGERS['1'];
-  const [activeTab, setActiveTab] = useState<'about' | 'services' | 'reviews'>('about');
+  const { id, tab } = useLocalSearchParams<{ id: string; tab?: string }>();
+  const [activeTab, setActiveTab] = useState<'about' | 'consultations' | 'reviews'>(
+    tab === 'services' ? 'consultations' : 'about',
+  );
+
+  const { astrologer, isLoading: astroLoading } = useAstrologer(id);
+  const { services, isLoading: servicesLoading } = useAstrologerServices(id);
+
+  const colorIndex = id ? id.charCodeAt(0) % COLORS.length : 0;
+  const color = COLORS[colorIndex]!;
+
+  if (astroLoading) {
+    return (
+      <View style={styles.root}>
+        <Header />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#9d0399" />
+        </View>
+      </View>
+    );
+  }
+
+  if (!astrologer) {
+    return (
+      <View style={styles.root}>
+        <Header />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ color: '#9d0399' }}>Astrologer not found</Text>
+        </View>
+      </View>
+    );
+  }
+
+  const meta = astrologer.meta;
 
   return (
     <View style={styles.root}>
-      {/* Header */}
       <Header />
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Profile Card */}
-        <View style={[styles.profileBanner, { backgroundColor: astro.color }]}>
-          <View style={styles.profileAvatarWrap}>
-            <View style={[styles.profileAvatar, { backgroundColor: astro.color }]}>
-              <Text style={styles.profileEmoji}>{astro.emoji}</Text>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 110 }}
+      >
+        {/* ── Profile Header Card ── */}
+        <View style={styles.profileCard}>
+          <View style={[styles.bgCircle1, { backgroundColor: color + '30' }]} />
+          <View style={[styles.bgCircle2, { backgroundColor: color + '18' }]} />
+
+          <View style={styles.profileTopRow}>
+            <View style={styles.avatarWrap}>
+              <View style={[styles.avatarRing, { borderColor: color + '60' }]}>
+                <View style={[styles.avatar, { backgroundColor: color + '22' }]}>
+                  <Text style={styles.avatarEmoji}>{meta.emoji}</Text>
+                </View>
+              </View>
+              <View
+                style={[
+                  styles.onlineBadge,
+                  { backgroundColor: meta.online ? '#22C55E' : '#9CA3AF' },
+                ]}
+              >
+                <Text style={styles.onlineBadgeText}>{meta.online ? '● Live' : '● Off'}</Text>
+              </View>
             </View>
-            <View
-              style={[styles.onlineDot, { backgroundColor: astro.online ? '#22C55E' : '#9CA3AF' }]}
-            />
+
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName}>{astrologer.name}</Text>
+              <Text style={[styles.profileSpeciality, { color }]}>{meta.speciality}</Text>
+              <Text style={styles.profileLang}>🌐 {meta.languages}</Text>
+              <View style={styles.profileMetaRow}>
+                <StarRating rating={meta.rating} size={13} />
+                <Text style={styles.reviewCount}> ({meta.reviews})</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity style={[styles.followBtn, { borderColor: color }]}>
+              <Text style={[styles.followBtnText, { color }]}>Follow +</Text>
+            </TouchableOpacity>
           </View>
-          <Text style={styles.profileName}>{astro.name}</Text>
-          <Text style={styles.profileSpeciality}>{astro.speciality}</Text>
-          <View style={styles.profileStatsRow}>
-            <View style={styles.profileStat}>
-              <Text style={styles.profileStatVal}>{astro.exp}</Text>
-              <Text style={styles.profileStatLabel}>Experience</Text>
+
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={[styles.statVal, { color }]}>{meta.exp}</Text>
+              <Text style={styles.statLabel}>Experience</Text>
             </View>
-            <View style={styles.profileStatDivider} />
-            <View style={styles.profileStat}>
-              <Text style={styles.profileStatVal}>{astro.rating}⭐</Text>
-              <Text style={styles.profileStatLabel}>Rating</Text>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={[styles.statVal, { color }]}>{meta.rating} ⭐</Text>
+              <Text style={styles.statLabel}>Rating</Text>
             </View>
-            <View style={styles.profileStatDivider} />
-            <View style={styles.profileStat}>
-              <Text style={styles.profileStatVal}>{astro.reviews}</Text>
-              <Text style={styles.profileStatLabel}>Reviews</Text>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={[styles.statVal, { color }]}>{meta.reviews}</Text>
+              <Text style={styles.statLabel}>Reviews</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={[styles.statVal, { color }]}>₹{meta.price}</Text>
+              <Text style={styles.statLabel}>Per Min</Text>
             </View>
           </View>
         </View>
 
-        {/* Language & Price badges */}
-        <View style={styles.badgesRow}>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>🌐 {astro.languages}</Text>
-          </View>
-          <View style={[styles.badge, styles.priceBadge]}>
-            <Text style={styles.priceBadgeText}>₹{astro.price}/min</Text>
-          </View>
-        </View>
-
-        {/* Tabs */}
+        {/* ── Tabs ── */}
         <View style={styles.tabRow}>
-          {(['about', 'services', 'reviews'] as const).map((tab) => (
+          {(['about', 'consultations', 'reviews'] as const).map((t) => (
             <TouchableOpacity
-              key={tab}
-              style={[styles.tab, activeTab === tab && styles.tabActive]}
-              onPress={() => setActiveTab(tab)}
+              key={t}
+              style={[styles.tab, activeTab === t && styles.tabActive]}
+              onPress={() => setActiveTab(t)}
             >
-              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              <Text style={[styles.tabText, activeTab === t && { color, fontWeight: '700' }]}>
+                {t === 'about' ? 'About' : t === 'consultations' ? 'Consultations' : 'Reviews'}
               </Text>
+              {activeTab === t && (
+                <View style={[styles.tabUnderline, { backgroundColor: color }]} />
+              )}
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Tab Content */}
+        {/* ── Tab Content ── */}
         <View style={styles.tabContent}>
-          {/* About */}
           {activeTab === 'about' && (
-            <View>
-              <Text style={styles.sectionTitle}>About</Text>
-              <Text style={styles.aboutText}>{astro.about}</Text>
+            <View style={styles.aboutSection}>
+              <Text style={styles.sectionTitle}>About Me</Text>
+              <Text style={styles.aboutText}>{meta.about}</Text>
+              <View style={styles.chipsRow}>
+                <View
+                  style={[
+                    styles.chip,
+                    { backgroundColor: color + '15', borderColor: color + '40' },
+                  ]}
+                >
+                  <Text style={[styles.chipText, { color }]}>🌐 {meta.languages}</Text>
+                </View>
+                <View
+                  style={[
+                    styles.chip,
+                    { backgroundColor: color + '15', borderColor: color + '40' },
+                  ]}
+                >
+                  <Text style={[styles.chipText, { color }]}>⏳ {meta.exp}</Text>
+                </View>
+                <View
+                  style={[
+                    styles.chip,
+                    { backgroundColor: color + '15', borderColor: color + '40' },
+                  ]}
+                >
+                  <Text style={[styles.chipText, { color }]}>💫 {meta.speciality}</Text>
+                </View>
+              </View>
             </View>
           )}
 
-          {/* Services */}
-          {activeTab === 'services' && (
+          {activeTab === 'consultations' && (
             <View style={{ gap: 12 }}>
-              <Text style={styles.sectionTitle}>Consultation Types</Text>
-              {astro.services.map((service: any) => (
-                <View key={service.id} style={styles.serviceCard}>
-                  <View style={styles.serviceLeft}>
-                    <Text style={styles.serviceEmoji}>{service.emoji}</Text>
-                    <View>
-                      <Text style={styles.serviceName}>{service.name}</Text>
-                      <Text style={styles.serviceDuration}>⏱ {service.duration}</Text>
+              <Text style={styles.sectionTitle}>Consultation Services</Text>
+              {servicesLoading ? (
+                <ActivityIndicator size="small" color="#9d0399" />
+              ) : services.length === 0 ? (
+                <Text style={{ color: '#AAA', textAlign: 'center' }}>No services available</Text>
+              ) : (
+                services.map((service) => (
+                  <View key={service.id} style={styles.serviceCard}>
+                    <View style={[styles.serviceStrip, { backgroundColor: color }]} />
+                    <View style={styles.serviceInner}>
+                      <View style={styles.serviceLeft}>
+                        <View style={[styles.serviceEmojiWrap, { backgroundColor: color + '18' }]}>
+                          <Text style={styles.serviceEmoji}>🔮</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.serviceName}>{service.title}</Text>
+                          <Text style={styles.serviceDuration}>
+                            ⏱ {service.durationMinutes} min
+                          </Text>
+                          <Text style={styles.serviceDesc} numberOfLines={1}>
+                            {service.shortDescription}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.serviceRight}>
+                        <Text style={[styles.servicePrice, { color }]}>₹{service.price}</Text>
+                        <TouchableOpacity
+                          style={[styles.bookServiceBtn, { backgroundColor: color }]}
+                          onPress={() =>
+                            router.push({
+                              pathname: '/(app)/book-slot',
+                              params: {
+                                astroId: id,
+                                serviceId: service.id,
+                                serviceName: service.title,
+                                price: service.price,
+                              },
+                            })
+                          }
+                        >
+                          <Text style={styles.bookServiceBtnText}>Book</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   </View>
-                  <View style={styles.serviceRight}>
-                    <Text style={styles.servicePrice}>₹{service.price}</Text>
-                    <TouchableOpacity
-                      style={styles.bookServiceBtn}
-                      onPress={() =>
-                        router.push({
-                          pathname: '/(app)/book-slot',
-                          params: {
-                            astroId: id,
-                            serviceId: service.id,
-                            serviceName: service.name,
-                            price: service.price,
-                          },
-                        })
-                      }
-                    >
-                      <Text style={styles.bookServiceBtnText}>Book</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))}
+                ))
+              )}
             </View>
           )}
 
-          {/* Reviews */}
           {activeTab === 'reviews' && (
-            <View style={{ gap: 12 }}>
-              <Text style={styles.sectionTitle}>Customer Reviews</Text>
-              {astro.reviews_list.map((review: any) => (
-                <View key={review.id} style={styles.reviewCard}>
-                  <View style={styles.reviewHeader}>
-                    <View style={styles.reviewAvatar}>
-                      <Text style={{ color: '#FFF', fontWeight: '700' }}>{review.name[0]}</Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.reviewName}>{review.name}</Text>
-                      <StarRating rating={review.rating} size={12} />
-                    </View>
-                    <Text style={styles.reviewDate}>{review.date}</Text>
-                  </View>
-                  <Text style={styles.reviewComment}>{review.comment}</Text>
-                </View>
-              ))}
+            <View style={{ alignItems: 'center', paddingTop: 40 }}>
+              <Text style={{ fontSize: 32 }}>⭐</Text>
+              <Text style={{ color: '#AAA', marginTop: 8 }}>Reviews coming soon</Text>
             </View>
           )}
         </View>
-
-        <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Bottom Book Button */}
+      {/* ── Bottom Bar ── */}
       <View style={styles.bottomBar}>
         <View>
-          <Text style={styles.bottomPrice}>
-            ₹{astro.price}
+          <Text style={[styles.bottomPrice, { color }]}>
+            ₹{meta.price}
             <Text style={styles.bottomPriceSub}>/min</Text>
           </Text>
-          <Text style={styles.bottomOnline}>{astro.online ? '🟢 Online Now' : '⚫ Offline'}</Text>
+          <Text style={styles.bottomOnline}>{meta.online ? '🟢 Online Now' : '⚫ Offline'}</Text>
         </View>
         <TouchableOpacity
-          style={styles.bookNowBtn}
-          onPress={() => setActiveTab('services')}
+          style={[styles.bookNowBtn, { backgroundColor: color }]}
+          onPress={() => {
+            if (activeTab === 'consultations') {
+              // Already consultations tab mein hai → book-slot pe jaao
+              // But serviceId kahan se? Pehli service le lo
+              const firstService = services[0];
+              if (firstService) {
+                router.push({
+                  pathname: '/(app)/book-slot',
+                  params: { astroId: id, serviceId: firstService.id },
+                });
+              }
+            } else {
+              // Consultations tab open karo
+              setActiveTab('consultations');
+            }
+          }}
           activeOpacity={0.85}
         >
-          <Text style={styles.bookNowBtnText}>Book Now</Text>
+          <Text style={styles.bookNowBtnText}>Book Consultation</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -258,146 +287,148 @@ export default function AstrologerProfileScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#F5F0FF' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 52,
-    paddingBottom: 12,
+  profileCard: {
     backgroundColor: '#FFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EDE9FF',
-  },
-  backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  backIcon: { fontSize: 22, color: '#9d0399' },
-  logoRow: { flexDirection: 'row', alignItems: 'center' },
-  logoAstro: { fontSize: 20, fontWeight: '800', color: '#1A1A2E' },
-  logoBookBadge: {
-    backgroundColor: '#9d0399',
-    borderRadius: 5,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    marginLeft: 2,
-  },
-  logoBook: { fontSize: 20, fontWeight: '800', color: '#FFF' },
-
-  // Profile Banner
-  profileBanner: {
-    alignItems: 'center',
-    paddingTop: 32,
-    paddingBottom: 28,
-    paddingHorizontal: 20,
-  },
-  profileAvatarWrap: { position: 'relative', marginBottom: 16 },
-  profileAvatar: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: '#FFFFFF50',
-  },
-  profileEmoji: { fontSize: 44 },
-  onlineDot: {
-    position: 'absolute',
-    bottom: 4,
-    right: 4,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 2,
-    borderColor: '#FFF',
-  },
-  profileName: { fontSize: 22, fontWeight: '800', color: '#FFF', marginBottom: 4 },
-  profileSpeciality: { fontSize: 14, color: '#FFFFFFCC', marginBottom: 20 },
-  profileStatsRow: { flexDirection: 'row', alignItems: 'center', gap: 0 },
-  profileStat: { alignItems: 'center', paddingHorizontal: 20 },
-  profileStatVal: { fontSize: 15, fontWeight: '700', color: '#FFF' },
-  profileStatLabel: { fontSize: 11, color: '#FFFFFFAA', marginTop: 2 },
-  profileStatDivider: { width: 1, height: 32, backgroundColor: '#FFFFFF30' },
-
-  // Badges
-  badgesRow: { flexDirection: 'row', gap: 10, padding: 16, flexWrap: 'wrap' },
-  badge: {
-    backgroundColor: '#FFF',
+    margin: 16,
     borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    padding: 18,
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#EDE9FF',
+    elevation: 3,
   },
-  badgeText: { fontSize: 12, color: '#444' },
-  priceBadge: { backgroundColor: '#9d0399', borderColor: '#9d0399' },
-  priceBadgeText: { fontSize: 12, color: '#FFF', fontWeight: '700' },
-
-  // Tabs
+  bgCircle1: {
+    position: 'absolute',
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    top: -60,
+    right: -40,
+  },
+  bgCircle2: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    bottom: -30,
+    left: -20,
+  },
+  profileTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, marginBottom: 20 },
+  avatarWrap: { position: 'relative' },
+  avatarRing: {
+    width: 82,
+    height: 82,
+    borderRadius: 41,
+    borderWidth: 2.5,
+    padding: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatar: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarEmoji: { fontSize: 34 },
+  onlineBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: -4,
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderWidth: 1.5,
+    borderColor: '#FFF',
+  },
+  onlineBadgeText: { fontSize: 9, color: '#FFF', fontWeight: '700' },
+  profileInfo: { flex: 1 },
+  profileName: { fontSize: 16, fontWeight: '800', color: '#1A1A2E', marginBottom: 2 },
+  profileSpeciality: { fontSize: 13, fontWeight: '600', marginBottom: 3 },
+  profileLang: { fontSize: 11, color: '#888', marginBottom: 4 },
+  profileMetaRow: { flexDirection: 'row', alignItems: 'center' },
+  reviewCount: { fontSize: 11, color: '#AAA' },
+  followBtn: {
+    borderWidth: 1.5,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginTop: 2,
+  },
+  followBtnText: { fontSize: 11, fontWeight: '700' },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9F6FF',
+    borderRadius: 14,
+    paddingVertical: 12,
+  },
+  statItem: { flex: 1, alignItems: 'center' },
+  statVal: { fontSize: 13, fontWeight: '800', marginBottom: 2 },
+  statLabel: { fontSize: 10, color: '#999' },
+  statDivider: { width: 1, height: 28, backgroundColor: '#E5E0F5' },
   tabRow: {
     flexDirection: 'row',
     backgroundColor: '#FFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EDE9FF',
+    marginHorizontal: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#EDE9FF',
+    overflow: 'hidden',
+    marginBottom: 4,
   },
-  tab: { flex: 1, paddingVertical: 14, alignItems: 'center' },
-  tabActive: { borderBottomWidth: 2, borderBottomColor: '#9d0399' },
-  tabText: { fontSize: 14, color: '#888', fontWeight: '500' },
-  tabTextActive: { color: '#9d0399', fontWeight: '700' },
-
-  // Tab Content
-  tabContent: { padding: 16 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#1A1A2E', marginBottom: 12 },
+  tab: { flex: 1, paddingVertical: 13, alignItems: 'center', position: 'relative' },
+  tabActive: { backgroundColor: '#FAFAFE' },
+  tabText: { fontSize: 13, color: '#999', fontWeight: '500' },
+  tabUnderline: {
+    position: 'absolute',
+    bottom: 0,
+    left: 16,
+    right: 16,
+    height: 2.5,
+    borderRadius: 2,
+  },
+  tabContent: { paddingHorizontal: 16, paddingTop: 12 },
+  sectionTitle: { fontSize: 15, fontWeight: '800', color: '#1A1A2E', marginBottom: 14 },
+  aboutSection: { gap: 14 },
   aboutText: { fontSize: 14, color: '#555', lineHeight: 22 },
-
-  // Service Card
+  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: { borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, borderWidth: 1 },
+  chipText: { fontSize: 12, fontWeight: '600' },
   serviceCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#EDE9FF',
+    overflow: 'hidden',
+    elevation: 1,
+    flexDirection: 'row',
+  },
+  serviceStrip: { width: 5 },
+  serviceInner: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFF',
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#EDE9FF',
-    elevation: 1,
-  },
-  serviceLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  serviceEmoji: { fontSize: 28 },
-  serviceName: { fontSize: 14, fontWeight: '700', color: '#1A1A2E' },
-  serviceDuration: { fontSize: 12, color: '#888', marginTop: 2 },
-  serviceRight: { alignItems: 'flex-end', gap: 6 },
-  servicePrice: { fontSize: 16, fontWeight: '800', color: '#9d0399' },
-  bookServiceBtn: {
-    backgroundColor: '#9d0399',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-  },
-  bookServiceBtnText: { color: '#FFF', fontSize: 13, fontWeight: '700' },
-
-  // Review
-  reviewCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 14,
     padding: 14,
-    borderWidth: 1,
-    borderColor: '#EDE9FF',
-    elevation: 1,
   },
-  reviewHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
-  reviewAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#9d0399',
+  serviceLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  serviceEmojiWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  reviewName: { fontSize: 13, fontWeight: '700', color: '#1A1A2E', marginBottom: 2 },
-  reviewDate: { fontSize: 11, color: '#AAA' },
-  reviewComment: { fontSize: 13, color: '#555', lineHeight: 20 },
-
-  // Bottom Bar
+  serviceEmoji: { fontSize: 24 },
+  serviceName: { fontSize: 14, fontWeight: '700', color: '#1A1A2E' },
+  serviceDuration: { fontSize: 12, color: '#888', marginTop: 2 },
+  serviceDesc: { fontSize: 11, color: '#AAA', marginTop: 2 },
+  serviceRight: { alignItems: 'flex-end', gap: 6 },
+  servicePrice: { fontSize: 16, fontWeight: '800' },
+  bookServiceBtn: { borderRadius: 8, paddingHorizontal: 16, paddingVertical: 6 },
+  bookServiceBtnText: { color: '#FFF', fontSize: 13, fontWeight: '700' },
   bottomBar: {
     position: 'absolute',
     bottom: 0,
@@ -411,16 +442,11 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderTopWidth: 1,
     borderTopColor: '#EDE9FF',
-    elevation: 8,
+    elevation: 10,
   },
-  bottomPrice: { fontSize: 22, fontWeight: '800', color: '#9d0399' },
+  bottomPrice: { fontSize: 22, fontWeight: '800' },
   bottomPriceSub: { fontSize: 13, color: '#AAA', fontWeight: '400' },
   bottomOnline: { fontSize: 12, color: '#666', marginTop: 2 },
-  bookNowBtn: {
-    backgroundColor: '#9d0399',
-    borderRadius: 14,
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-  },
-  bookNowBtnText: { color: '#FFF', fontSize: 16, fontWeight: '800' },
+  bookNowBtn: { borderRadius: 14, paddingHorizontal: 28, paddingVertical: 14 },
+  bookNowBtnText: { color: '#FFF', fontSize: 15, fontWeight: '800' },
 });

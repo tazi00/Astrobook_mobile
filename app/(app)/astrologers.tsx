@@ -1,8 +1,9 @@
 import Header from '@/src/components/header';
+import { useAstrologers } from '@/src/features/astrolgers/hooks/useAstrologers';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  Dimensions,
+  ActivityIndicator,
   FlatList,
   ScrollView,
   StyleSheet,
@@ -12,104 +13,25 @@ import {
   View,
 } from 'react-native';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
 const FILTERS = [
   { id: 'all', label: '✨ All' },
-  { id: 'love', label: '❤️ Love' },
-  { id: 'marriage', label: '💍 Marriage' },
-  { id: 'health', label: '🌿 Health' },
-  { id: 'finance', label: '💰 Finance' },
-  { id: 'career', label: '🚀 Career' },
-  { id: 'remedies', label: '🔮 Remedies' },
-  { id: 'education', label: '📚 Education' },
+  { id: 'Kundli', label: '🔮 Kundli' },
+  { id: 'Tarot', label: '🃏 Tarot' },
+  { id: 'Numerology', label: '🔢 Numerology' },
+  { id: 'Palmistry', label: '✋ Palmistry' },
+  { id: 'Vastu', label: '🏠 Vastu' },
+  { id: 'Astrology', label: '⭐ Astrology' },
 ];
 
-const ASTROLOGERS = [
-  {
-    id: '1',
-    name: 'Suprio Karmakar',
-    speciality: 'Vedic',
-    languages: 'Bengali, English, Hindi',
-    exp: '15 Years',
-    rating: 4.5,
-    reviews: 1021,
-    price: 199,
-    emoji: '🔮',
-    color: '#6B21A8',
-    tags: ['love', 'marriage', 'remedies'],
-    online: true,
-  },
-  {
-    id: '2',
-    name: 'Ananya Sharma',
-    speciality: 'Tarot Expert',
-    languages: 'Hindi, English',
-    exp: '8 Years',
-    rating: 4.8,
-    reviews: 856,
-    price: 299,
-    emoji: '🃏',
-    color: '#9D174D',
-    tags: ['love', 'career', 'finance'],
-    online: true,
-  },
-  {
-    id: '3',
-    name: 'Rohit Mishra',
-    speciality: 'Numerology',
-    languages: 'Hindi, Marathi',
-    exp: '12 Years',
-    rating: 4.3,
-    reviews: 643,
-    price: 149,
-    emoji: '🔢',
-    color: '#1E40AF',
-    tags: ['finance', 'career', 'education'],
-    online: false,
-  },
-  {
-    id: '4',
-    name: 'Priya Devi',
-    speciality: 'Palmistry',
-    languages: 'Tamil, English',
-    exp: '10 Years',
-    rating: 4.7,
-    reviews: 422,
-    price: 249,
-    emoji: '✋',
-    color: '#065F46',
-    tags: ['health', 'marriage', 'remedies'],
-    online: true,
-  },
-  {
-    id: '5',
-    name: 'Vikash Joshi',
-    speciality: 'Vastu',
-    languages: 'Hindi, Gujarati',
-    exp: '20 Years',
-    rating: 4.9,
-    reviews: 1532,
-    price: 399,
-    emoji: '🏠',
-    color: '#92400E',
-    tags: ['finance', 'health', 'remedies'],
-    online: false,
-  },
-  {
-    id: '6',
-    name: 'Meera Nair',
-    speciality: 'KP Astrology',
-    languages: 'Malayalam, English',
-    exp: '6 Years',
-    rating: 4.4,
-    reviews: 289,
-    price: 179,
-    emoji: '⭐',
-    color: '#6B21A8',
-    tags: ['love', 'education', 'career'],
-    online: true,
-  },
+const COLORS = ['#6B21A8', '#9D174D', '#1E40AF', '#065F46', '#92400E', '#1E3A5F'];
+
+const BANNER_GRADIENTS = [
+  ['#2D0A4E', '#6B21A8'],
+  ['#4A0E2B', '#9D174D'],
+  ['#0A1628', '#1E40AF'],
+  ['#022B1E', '#065F46'],
+  ['#2B1500', '#92400E'],
+  ['#050F1F', '#1E3A5F'],
 ];
 
 function StarRating({ rating }: { rating: number }) {
@@ -125,26 +47,168 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
+function AstrologerCard({
+  item,
+  index,
+  onNamePress,
+  onBookPress,
+}: {
+  item: any;
+  index: number;
+  onNamePress: () => void;
+  onBookPress: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const color = COLORS[index % COLORS.length];
+  const bannerColors = BANNER_GRADIENTS[index % BANNER_GRADIENTS.length];
+
+  const handleCardPress = () => {
+    setExpanded((prev) => !prev);
+  };
+
+  return (
+    <View style={styles.cardWrapper}>
+      {/* Main Card Row */}
+      <TouchableOpacity style={styles.card} onPress={handleCardPress} activeOpacity={0.95}>
+        {/* Avatar */}
+        <View style={[styles.avatar, { backgroundColor: color }]}>
+          <Text style={styles.avatarEmoji}>{item.meta?.emoji ?? '🔮'}</Text>
+          <View
+            style={[
+              styles.onlineDot,
+              { backgroundColor: item.meta?.online ? '#22C55E' : '#9CA3AF' },
+            ]}
+          />
+        </View>
+
+        {/* Info */}
+        <View style={styles.cardInfo}>
+          <View style={styles.cardTopRow}>
+            {/* Naam click → profile */}
+            <TouchableOpacity onPress={onNamePress} activeOpacity={0.7}>
+              <Text style={styles.cardName} numberOfLines={1}>
+                {item.name}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.followBtn}>
+              <Text style={styles.followBtnText}>Follow +</Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.cardSpeciality}>{item.meta?.speciality}</Text>
+          <Text style={styles.cardMeta}>{item.meta?.languages}</Text>
+          <Text style={styles.cardMeta}>Exp: {item.meta?.exp}</Text>
+
+          <View style={styles.cardBottomRow}>
+            <View>
+              <StarRating rating={item.meta?.rating ?? 0} />
+              <Text style={styles.reviewCount}>{item.meta?.reviews} reviews</Text>
+            </View>
+
+            {/* Book Now → profile */}
+            <TouchableOpacity
+              style={styles.bookBtn}
+              onPress={() => onBookPress()}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.bookBtnPrice}>₹{item.meta?.price ?? '—'}</Text>
+              <Text style={styles.bookBtnText}>Book Now</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </TouchableOpacity>
+
+      {/* Accordion Dropdown */}
+      {expanded && (
+        <View style={styles.accordion}>
+          {/* About text */}
+          <Text style={styles.accordionAbout} numberOfLines={3}>
+            {item.meta?.about ??
+              `${item.name} is an experienced ${item.meta?.speciality ?? 'astrologer'} with ${item.meta?.exp ?? 'several years'} of experience. Specializes in providing guidance on life, relationships, and career.`}
+          </Text>
+          <TouchableOpacity onPress={onNamePress}>
+            <Text style={styles.seeMore}>See more...</Text>
+          </TouchableOpacity>
+
+          {/* Banner */}
+          <View style={[styles.bannerCard, { backgroundColor: bannerColors[0] }]}>
+            {/* Decorative circles */}
+            <View style={[styles.bannerCircle1, { backgroundColor: bannerColors[1] }]} />
+            <View style={[styles.bannerCircle2, { backgroundColor: bannerColors[1] + '80' }]} />
+
+            {/* Banner content */}
+            <View style={styles.bannerContent}>
+              <View style={styles.bannerLeft}>
+                <Text style={styles.bannerEmoji}>{item.meta?.emoji ?? '🔮'}</Text>
+                <Text style={styles.bannerName}>{item.name}</Text>
+                <Text style={styles.bannerSpeciality}>{item.meta?.speciality}</Text>
+              </View>
+              <View style={styles.bannerRight}>
+                <Text style={styles.bannerTag}>AstroBook</Text>
+                <View
+                  style={[
+                    styles.bannerOnline,
+                    { backgroundColor: item.meta?.online ? '#22C55E' : '#9CA3AF' },
+                  ]}
+                >
+                  <Text style={styles.bannerOnlineText}>
+                    {item.meta?.online ? '● Online' : '● Offline'}
+                  </Text>
+                </View>
+                <TouchableOpacity style={styles.bannerBookBtn} onPress={onBookPress}>
+                  <Text style={styles.bannerBookBtnText}>Book ₹{item.meta?.price}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+}
+
 export default function AstrologersScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState('all');
   const [search, setSearch] = useState('');
 
-  const filtered = ASTROLOGERS.filter((a) => {
-    const matchFilter = activeFilter === 'all' || a.tags.includes(activeFilter);
+  const { astrologers, isLoading, error } = useAstrologers();
+
+  const filtered = astrologers.filter((a) => {
+    const matchFilter = activeFilter === 'all' || a.interests?.includes(activeFilter);
     const matchSearch =
       search === '' ||
       a.name.toLowerCase().includes(search.toLowerCase()) ||
-      a.speciality.toLowerCase().includes(search.toLowerCase());
+      a.meta?.speciality.toLowerCase().includes(search.toLowerCase());
     return matchFilter && matchSearch;
   });
 
+  if (isLoading) {
+    return (
+      <View style={styles.root}>
+        <Header />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#9d0399" />
+        </View>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.root}>
+        <Header />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ color: '#9d0399' }}>Failed to load astrologers</Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.root}>
-      {/* Top Bar */}
       <Header />
 
-      {/* Search Bar */}
       <View style={styles.searchBar}>
         <Text style={styles.searchBarIcon}>🔍</Text>
         <TextInput
@@ -161,7 +225,6 @@ export default function AstrologersScreen() {
         )}
       </View>
 
-      {/* Filter Chips */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -181,60 +244,27 @@ export default function AstrologersScreen() {
         ))}
       </ScrollView>
 
-      {/* Count */}
       <Text style={styles.countText}>{filtered.length} Astrologers found</Text>
 
-      {/* List */}
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            {/* Avatar */}
-            <View style={[styles.avatar, { backgroundColor: item.color }]}>
-              <Text style={styles.avatarEmoji}>{item.emoji}</Text>
-              {/* Online dot */}
-              <View
-                style={[styles.onlineDot, { backgroundColor: item.online ? '#22C55E' : '#9CA3AF' }]}
-              />
-            </View>
-
-            {/* Info */}
-            <View style={styles.cardInfo}>
-              <View style={styles.cardTopRow}>
-                <Text style={styles.cardName} numberOfLines={1}>
-                  {item.name}
-                </Text>
-                <TouchableOpacity style={styles.followBtn}>
-                  <Text style={styles.followBtnText}>Follow +</Text>
-                </TouchableOpacity>
-              </View>
-
-              <Text style={styles.cardSpeciality}>{item.speciality}</Text>
-              <Text style={styles.cardMeta}>{item.languages}</Text>
-              <Text style={styles.cardMeta}>Exp: {item.exp}</Text>
-
-              <View style={styles.cardBottomRow}>
-                <View>
-                  <StarRating rating={item.rating} />
-                  <Text style={styles.reviewCount}>{item.reviews} reviews</Text>
-                </View>
-
-                <TouchableOpacity
-                  style={styles.bookBtn}
-                  onPress={() =>
-                    router.push({ pathname: '/(app)/astrologer-profile', params: { id: item.id } })
-                  }
-                  activeOpacity={0.85}
-                >
-                  <Text style={styles.bookBtnPrice}>₹{item.price}</Text>
-                  <Text style={styles.bookBtnText}>Book Now</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
+        renderItem={({ item, index }) => (
+          <AstrologerCard
+            item={item}
+            index={index}
+            onNamePress={() =>
+              router.push({ pathname: '/(app)/astrologer-profile', params: { id: item.id } })
+            }
+            onBookPress={() =>
+              router.push({
+                pathname: '/(app)/astrologer-profile',
+                params: { id: item.id, tab: 'services' },
+              })
+            }
+          />
         )}
       />
     </View>
@@ -243,38 +273,6 @@ export default function AstrologersScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#F5F0FF' },
-
-  // Top Bar
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 52,
-    paddingBottom: 12,
-    backgroundColor: '#FFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EDE9FF',
-    elevation: 2,
-  },
-  logoRow: { flexDirection: 'row', alignItems: 'center' },
-  logoAstro: { fontSize: 22, fontWeight: '800', color: '#1A1A2E' },
-  logoBookBadge: {
-    backgroundColor: '#9d0399',
-    borderRadius: 5,
-    paddingHorizontal: 7,
-    paddingVertical: 1,
-    marginLeft: 2,
-  },
-  logoBook: { fontSize: 22, fontWeight: '800', color: '#FFF' },
-  searchIconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#F5F0FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 
   // Search
   searchBar: {
@@ -325,15 +323,22 @@ const styles = StyleSheet.create({
 
   // List
   listContent: { paddingHorizontal: 16, paddingBottom: 32, gap: 12 },
-  card: {
-    flexDirection: 'row',
-    backgroundColor: '#FFF',
+
+  // Card wrapper (card + accordion together)
+  cardWrapper: {
     borderRadius: 16,
-    padding: 14,
-    gap: 14,
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#EDE9FF',
     elevation: 2,
+    backgroundColor: '#FFF',
+  },
+
+  card: {
+    flexDirection: 'row',
+    backgroundColor: '#FFF',
+    padding: 14,
+    gap: 14,
   },
 
   // Avatar
@@ -365,7 +370,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 2,
   },
-  cardName: { fontSize: 15, fontWeight: '700', color: '#1A1A2E', flex: 1 },
+  cardName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A1A2E',
+    flex: 1,
+    textDecorationLine: 'underline',
+  },
   followBtn: {
     borderWidth: 1,
     borderColor: '#9d0399',
@@ -393,4 +404,84 @@ const styles = StyleSheet.create({
   },
   bookBtnPrice: { color: '#FFD700', fontSize: 11, fontWeight: '700' },
   bookBtnText: { color: '#FFF', fontSize: 12, fontWeight: '700' },
+
+  // Accordion
+  accordion: {
+    backgroundColor: '#FAFAFA',
+    paddingHorizontal: 14,
+    paddingTop: 8,
+    paddingBottom: 14,
+    borderTopWidth: 1,
+    borderTopColor: '#EDE9FF',
+  },
+  accordionAbout: {
+    fontSize: 13,
+    color: '#555',
+    lineHeight: 20,
+    marginBottom: 4,
+  },
+  seeMore: {
+    fontSize: 13,
+    color: '#9d0399',
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+
+  // Banner inside accordion
+  bannerCard: {
+    borderRadius: 14,
+    height: 110,
+    overflow: 'hidden',
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  bannerCircle1: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    top: -30,
+    right: -20,
+    opacity: 0.5,
+  },
+  bannerCircle2: {
+    position: 'absolute',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    bottom: -20,
+    left: 30,
+    opacity: 0.3,
+  },
+  bannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+  },
+  bannerLeft: { gap: 2 },
+  bannerEmoji: { fontSize: 28, marginBottom: 2 },
+  bannerName: { fontSize: 13, fontWeight: '800', color: '#FFF' },
+  bannerSpeciality: { fontSize: 11, color: '#FFFFFFBB' },
+  bannerRight: { alignItems: 'flex-end', gap: 6 },
+  bannerTag: {
+    fontSize: 10,
+    color: '#FFFFFFAA',
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  bannerOnline: {
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  bannerOnlineText: { fontSize: 10, color: '#FFF', fontWeight: '600' },
+  bannerBookBtn: {
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  bannerBookBtnText: { color: '#9d0399', fontSize: 12, fontWeight: '800' },
 });

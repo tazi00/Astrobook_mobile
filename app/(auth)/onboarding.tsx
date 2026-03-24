@@ -1,21 +1,30 @@
+import { useAuthStore } from '@/src/features/auth/store/authstore';
+import { useUser } from '@/src/features/user/hooks/useUser';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  View,
+  Alert,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Alert,
+  View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useAuthStore } from '@/src/store/authStore';
 
 const INTERESTS = [
-  '🔮 Kundali', '🔢 Numerology', '🏠 Vastu', '🃏 Tarot',
-  '🌀 Past Life', '✋ Palmistry', '💎 Crystals', '🌿 Reiki',
-  '⚖️ Feng Shui', '♈ Horoscope', '🧘 Chakra', '🌙 Meditation',
-  '⭐ Astrology', '🌊 Manifestation',
+  'Numerology',
+  'Vastu',
+  'Past Life',
+  'Reiki',
+  'Tarot',
+  'Astrology',
+  'Palmistry',
+  'Face Reading',
+  'Kundli',
+  'Horoscope',
+  'Gemstones',
+  'Meditation',
 ];
 
 export default function OnboardingScreen() {
@@ -27,10 +36,10 @@ export default function OnboardingScreen() {
   const [selected, setSelected] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const { onboard, onboarding, onboardError } = useUser();
+
   const toggleInterest = (item: string) => {
-    setSelected((prev) =>
-      prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item]
-    );
+    setSelected((prev) => (prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item]));
   };
 
   const handleComplete = () => {
@@ -38,11 +47,11 @@ export default function OnboardingScreen() {
       Alert.alert('Required', 'Please enter your name');
       return;
     }
-    setLoading(true);
-    setTimeout(() => {
-      updateUser({ name, dob, interests: selected });
-      router.replace('/(app)/feed');
-    }, 600);
+    onboard({
+      name,
+      dateOfBirth: dob || undefined, // empty string mat bhejo
+      interests: selected,
+    });
   };
 
   return (
@@ -97,9 +106,7 @@ export default function OnboardingScreen() {
                 onPress={() => toggleInterest(item)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                  {item}
-                </Text>
+                <Text style={[styles.chipText, active && styles.chipTextActive]}>{item}</Text>
               </TouchableOpacity>
             );
           })}
@@ -108,21 +115,16 @@ export default function OnboardingScreen() {
 
       {/* Submit */}
       <TouchableOpacity
-        style={[styles.btn, loading && styles.btnLoading]}
+        style={[styles.btn, onboarding && styles.btnLoading]}
+        disabled={onboarding}
         onPress={handleComplete}
-        disabled={loading}
         activeOpacity={0.85}
       >
-        <Text style={styles.btnText}>
-          {loading ? 'Setting up...' : 'Start My Journey 🚀'}
-        </Text>
+        <Text style={styles.btnText}>{onboarding ? 'Setting up...' : 'Start My Journey 🚀'}</Text>
       </TouchableOpacity>
 
       {/* Skip */}
-      <TouchableOpacity
-        style={styles.skipBtn}
-        onPress={() => router.replace('/(app)/feed')}
-      >
+      <TouchableOpacity style={styles.skipBtn} onPress={() => router.replace('/(app)/feed')}>
         <Text style={styles.skipText}>Skip for now</Text>
       </TouchableOpacity>
     </ScrollView>

@@ -1,5 +1,6 @@
 import Header from '@/src/components/header';
-import { useAuthStore } from '@/src/store/authStore';
+import { useAuth } from '@/src/features/auth/hooks/useAuth';
+import { useAuthStore } from '@/src/features/auth/store/authstore';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from 'react';
@@ -77,6 +78,7 @@ const POSTS = [
 export default function FeedScreen() {
   const { user } = useAuthStore();
   const [posts, setPosts] = useState(POSTS);
+  const { logout } = useAuth();
 
   const toggleLike = (id: string) => {
     setPosts((prev) =>
@@ -89,7 +91,9 @@ export default function FeedScreen() {
   return (
     <View style={styles.root}>
       <Header />
-
+      <TouchableOpacity onPress={() => logout()}>
+        <Text>Logout</Text>
+      </TouchableOpacity>
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
         {/* ── Stories Row ── */}
         <FlatList

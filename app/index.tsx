@@ -1,4 +1,4 @@
-import { useAuthStore } from '@/src/store/authStore';
+import { useAuthStore } from '@/src/features/auth/store/authstore';
 import { Redirect } from 'expo-router';
 
 export default function Index() {

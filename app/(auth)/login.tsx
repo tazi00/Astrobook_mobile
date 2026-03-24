@@ -1,6 +1,7 @@
 import AstroGradient from '@/assets/images/astro-gradient.svg';
 import AstroLogo from '@/assets/images/astro-icon.svg';
 import GoogleLogo from '@/assets/images/google-icon.svg';
+import { useAuth } from '@/src/features/auth/hooks/useAuth';
 import Checkbox from 'expo-checkbox';
 
 import { useRouter } from 'expo-router';
@@ -49,24 +50,22 @@ export default function LoginScreen() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
   const flatListRef = useRef<FlatList>(null);
+  const { sendOTP, sendingOTP, sendOTPError } = useAuth();
 
   const handleSendOTP = () => {
     if (!phone.trim()) {
       Alert.alert('Error', 'Phone number daalo');
       return;
     }
-    const fullContact = `${selectedCode.code}${phone}`;
-    console.log('=== OTP REQUEST ===');
-    console.log(
-      JSON.stringify({ contact: fullContact, countryCode: selectedCode.code, phone }, null, 2),
-    );
-    console.log('===================');
-
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      router.push({ pathname: '/(auth)/otp', params: { contact: fullContact } });
-    }, 800);
+    const fullPhone = `${selectedCode.code}${phone}`;
+    sendOTP(fullPhone, {
+      onSuccess: () => {
+        router.push({ pathname: '/(auth)/otp', params: { contact: fullPhone } });
+      },
+      onError: (err: any) => {
+        Alert.alert('Error', err.message || 'OTP nahi gaya');
+      },
+    });
   };
   const links = [
     { label: 'About Us', url: 'https://astrobook-vert.vercel.app/about' },
@@ -122,18 +121,18 @@ export default function LoginScreen() {
               placeholderTextColor="#919191"
               value={phone}
               onChangeText={setPhone}
-              maxLength={12}
+              maxLength={10}
             />
           </View>
 
           {/* Send OTP Button */}
           <TouchableOpacity
-            style={[styles.otpBtn, loading && { opacity: 0.7 }]}
+            style={[styles.otpBtn, sendingOTP && { opacity: 0.7 }]}
             onPress={handleSendOTP}
-            disabled={loading}
+            disabled={sendingOTP}
             activeOpacity={0.85}
           >
-            <Text style={styles.otpBtnText}>{loading ? 'Sending...' : 'Send OTP'}</Text>
+            <Text style={styles.otpBtnText}>{sendingOTP ? 'Sending...' : 'Send OTP'}</Text>
           </TouchableOpacity>
 
           {/* Remember Me */}
